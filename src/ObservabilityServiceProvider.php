@@ -28,17 +28,6 @@ class ObservabilityServiceProvider extends ServiceProvider
             return new CollectorRegistry(new PrometheusRedis());
         });
         $this->app->singleton(Services\Metrics::class);
-
-        // Must register in register() (not boot): Laravel may resolve the HTTP kernel
-        // during bootstrap, and afterResolving callbacks added later never fire.
-        $this->app->afterResolving(\Illuminate\Contracts\Http\Kernel::class, function ($kernel) {
-            if (! config('observability.metrics.enabled')) {
-                return;
-            }
-
-            $kernel->appendMiddlewareToGroup('web', Http\Middleware\RecordRequestMetrics::class);
-            $kernel->appendMiddlewareToGroup('api', Http\Middleware\RecordRequestMetrics::class);
-        });
     }
 
     public function boot(): void
@@ -54,6 +43,13 @@ class ObservabilityServiceProvider extends ServiceProvider
         $this->registerLokiChannel();
         $this->registerMetricsRoute();
         $this->registerQueueMetrics();
+
+        $router = $this->app['router'];
+
+        $router->aliasMiddleware(
+            'observe:record',
+            \Http\Middleware\RecordRequestMetrics::class
+        );
     }
 
     protected function registerLokiChannel(): void

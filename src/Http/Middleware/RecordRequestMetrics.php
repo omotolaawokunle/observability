@@ -13,6 +13,10 @@ class RecordRequestMetrics
 
     public function handle(Request $request, Closure $next): Response
     {
+        if (!config('observability.metrics.enabled')) {
+            return $next($request);
+        }
+        
         $start = microtime(true);
 
         $response = $next($request);
