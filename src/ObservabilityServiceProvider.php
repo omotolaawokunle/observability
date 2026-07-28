@@ -83,8 +83,13 @@ class ObservabilityServiceProvider extends ServiceProvider
             return;
         }
 
-        $this->app['router']->pushMiddlewareToGroup('web', Http\Middleware\RecordRequestMetrics::class);
-        $this->app['router']->pushMiddlewareToGroup('api', Http\Middleware\RecordRequestMetrics::class);
+        // Laravel 11+ rebuilds middleware groups when the HTTP kernel is resolved,
+        // which wipes router->pushMiddlewareToGroup() calls from service providers.
+        // Append after the kernel is resolved so request metrics actually run.
+        $this->app->afterResolving(\Illuminate\Contracts\Http\Kernel::class, function ($kernel) {
+            $kernel->appendMiddlewareToGroup('web', Http\Middleware\RecordRequestMetrics::class);
+            $kernel->appendMiddlewareToGroup('api', Http\Middleware\RecordRequestMetrics::class);
+        });
     }
 
     protected function registerQueueMetrics(): void
