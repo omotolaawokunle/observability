@@ -1,0 +1,23 @@
+{
+    "name": "lectern/observability",
+    "description": "Shared Loki logging + Prometheus metrics for Laravel projects",
+    "type": "library",
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^10.0|^11.0",
+        "itsgoingd/laravel-loki": "^1.0",
+        "promphp/prometheus_client_php": "^2.11"
+    },
+    "autoload": {
+        "psr-4": {
+            "Lectern\\Observability\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Lectern\\Observability\\ObservabilityServiceProvider"
+            ]
+        }
+    }
+}
