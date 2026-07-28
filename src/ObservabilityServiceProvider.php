@@ -4,7 +4,7 @@ namespace Lectern\Observability;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Log\LogManager;
-use ItsGoingd\LaravelLoki\LokiHandler;
+use Lectern\Observability\Logging\LokiHandler;
 use Prometheus\CollectorRegistry;
 use Prometheus\Storage\Redis as PrometheusRedis;
 
@@ -12,7 +12,7 @@ class ObservabilityServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/observability.php', 'observability');
+        $this->mergeConfigFrom(__DIR__ . '/config/observability.php', 'observability');
 
         $this->app->singleton(CollectorRegistry::class, function () {
             PrometheusRedis::setDefaultOptions(array_merge(
@@ -28,7 +28,7 @@ class ObservabilityServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->publishes([
-            __DIR__ . '/../config/observability.php' => config_path('observability.php'),
+            __DIR__ . '/config/observability.php' => config_path('observability.php'),
         ], 'observability-config');
 
         $this->commands([
@@ -69,7 +69,7 @@ class ObservabilityServiceProvider extends ServiceProvider
     protected function registerMetricsRoute(): void
     {
         if (config('observability.metrics.enabled')) {
-            $this->loadRoutesFrom(__DIR__ . '/../routes/observability.php');
+            $this->loadRoutesFrom(__DIR__ . '/routes/observability.php');
         }
     }
 
