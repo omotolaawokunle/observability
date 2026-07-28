@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Log\LogManager;
 use Lectern\Observability\Logging\LokiHandler;
 use Prometheus\CollectorRegistry;
+use Prometheus\Storage\InMemory as PrometheusInMemory;
 use Prometheus\Storage\Redis as PrometheusRedis;
 
 class ObservabilityServiceProvider extends ServiceProvider
@@ -15,6 +16,10 @@ class ObservabilityServiceProvider extends ServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/config/observability.php', 'observability');
 
         $this->app->singleton(CollectorRegistry::class, function () {
+            if (! config('observability.metrics.enabled')) {
+                return new CollectorRegistry(new PrometheusInMemory());
+            }
+
             PrometheusRedis::setDefaultOptions(array_merge(
                 config('observability.metrics.redis'),
                 ['prefix' => 'obs:' . config('observability.project') . ':']
@@ -37,8 +42,7 @@ class ObservabilityServiceProvider extends ServiceProvider
 
         $this->registerLokiChannel();
         $this->registerMetricsRoute();
-        $this->app['router']->pushMiddlewareToGroup('web', Http\Middleware\RecordRequestMetrics::class);
-        $this->app['router']->pushMiddlewareToGroup('api', Http\Middleware\RecordRequestMetrics::class);
+        $this->registerRequestMetrics();
         $this->registerQueueMetrics();
     }
 
@@ -73,8 +77,22 @@ class ObservabilityServiceProvider extends ServiceProvider
         }
     }
 
+    protected function registerRequestMetrics(): void
+    {
+        if (! config('observability.metrics.enabled')) {
+            return;
+        }
+
+        $this->app['router']->pushMiddlewareToGroup('web', Http\Middleware\RecordRequestMetrics::class);
+        $this->app['router']->pushMiddlewareToGroup('api', Http\Middleware\RecordRequestMetrics::class);
+    }
+
     protected function registerQueueMetrics(): void
     {
+        if (! config('observability.metrics.enabled')) {
+            return;
+        }
+
         $this->app['events']->listen(\Illuminate\Queue\Events\JobProcessed::class, function ($event) {
             $metrics = $this->app->make(Services\Metrics::class);
             $jobClass = $event->job->resolveName();
